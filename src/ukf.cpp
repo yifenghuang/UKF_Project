@@ -7,7 +7,8 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::vector;
 
-#define EPS 0.0001
+#define EPS 0.001
+#define EPPS 0.00001
 /**
  * Initializes Unscented Kalman filter
  */
@@ -49,26 +50,24 @@ UKF::UKF()
   /**
   TODO:
   Complete the initialization. See ukf.h for other member properties.
-
   Hint: one or more values initialized above might be wildly off...
   */
 
+  is_initialized_ = false;
+
   n_x_ = 5;//state dimension
   n_aug_ = 7;// Augment state dimension
-
   lambda_ = 3-n_x_;// Sigma point spread parameter
-
-  is_initialized_ = false;
 
   x_ << 0,0,0,0,0;
 
-  P_<< 1,0,0,0,0,
-       0,1,0,0,0,
+  P_<< 0.15,0,0,0,0,
+       0,0.15,0,0,0,
        0,0,1,0,0,
        0,0,0,1,0,
        0,0,0,0,1;
 
-  time_us_ = 0;
+  time_us_ = 0.0;
 
   weights_ = VectorXd(2*n_aug_+1);
   Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
@@ -91,19 +90,18 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package)
   // Initialization and use first measurement to set up px and py
   if (!is_initialized_)
   {
+    time_us_ = meas_package.timestamp_;
+
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR)
     {
       float ro = meas_package.raw_measurements_[0];
       float theta = meas_package.raw_measurements_[1];
       float ro_dot = meas_package.raw_measurements_[2];
-
       x_ << ro*cos(theta),ro*sin(theta),0,0,0;
-      time_us_ = meas_package.timestamp_;
     }
     else if (meas_package.sensor_type_ == MeasurementPackage::LASER)
     {
       x_ << meas_package.raw_measurements_[0],meas_package.raw_measurements_[1],0,0,0;
-      time_us_ = meas_package.timestamp_;
     }
 
     // done initializing, no need to predict or update
